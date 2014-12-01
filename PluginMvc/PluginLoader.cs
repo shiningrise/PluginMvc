@@ -155,21 +155,22 @@ namespace PluginMvc
                         File.Copy(srcPath, toPath, true);
                         if (!IsAlreadyLoaded(plugindll))
                         {
-                            var shadowCopiedAssembly = Assembly.Load(AssemblyName.GetAssemblyName(toPath));
-                            System.Web.Compilation.BuildManager.AddReferencedAssembly(shadowCopiedAssembly);
+                            PerformFileDeploy(plugindll);
+                            //var shadowCopiedAssembly = Assembly.Load(AssemblyName.GetAssemblyName(toPath));
+                            //System.Web.Compilation.BuildManager.AddReferencedAssembly(shadowCopiedAssembly);
                         }
 #if DEBUG
-                        if (srcPath.EndsWith(".dll"))
-                        {
-                            var srcPdbPath = plugindll.FullName.Substring(0, plugindll.FullName.Length - 4) + ".pdb";
-                            var pdfName = plugindll.Name.Substring(0, plugindll.Name.Length - 4) + ".pdb";
-                            var toPdbPath = Path.Combine(TempPluginFolder.FullName, pdfName);
+                        //if (srcPath.EndsWith(".dll"))
+                        //{
+                        //    var srcPdbPath = plugindll.FullName.Substring(0, plugindll.FullName.Length - 4) + ".pdb";
+                        //    var pdfName = plugindll.Name.Substring(0, plugindll.Name.Length - 4) + ".pdb";
+                        //    var toPdbPath = Path.Combine(TempPluginFolder.FullName, pdfName);
 
-                            if (File.Exists(srcPdbPath))
-                            {
-                                File.Copy(srcPdbPath, toPdbPath, true);
-                            }
-                        }
+                        //    if (File.Exists(srcPdbPath))
+                        //    {
+                        //        File.Copy(srcPdbPath, toPdbPath, true);
+                        //    }
+                        //}
 #endif
                     }
                     catch (Exception)

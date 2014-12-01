@@ -11,6 +11,7 @@ namespace Plugin.Admin.Controllers
         // GET: Home
         public ActionResult Index()
         {
+            ViewBag.Hello = "hello 123456";
             return View();
         }
     }
