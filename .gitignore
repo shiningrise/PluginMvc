@@ -27,3 +27,5 @@ obj/
 _ReSharper*/
 [Tt]est[Rr]esult*
 packages/*
+WebApplication1/App_Data/*
+WebApplication1/App_Data/*

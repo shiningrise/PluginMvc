@@ -116,15 +116,14 @@
     </Content>
     <Content Include="Views\Web.config" />
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
-    <Content Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\Plugins\Plugin.Contents.Models\Plugin.Contents.Models.csproj">
+    <ProjectReference Include="..\..\..\PluginsLibs\Plugin.Contents.Models\Plugin.Contents.Models.csproj">
       <Project>{a024513f-65a6-4180-bc6a-4b99187a4f59}</Project>
       <Name>Plugin.Contents.Models</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\Home\List.cshtml" />

@@ -1,7 +1,6 @@
 ﻿namespace Plugin.Contents.Controllers
 {
     using System.Web.Mvc;
-
     using Plugin.Contents.Models;
     using System;
 

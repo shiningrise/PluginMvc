@@ -243,8 +243,8 @@
     <None Include="Project_Readme.html" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Plugin.Mvc\PluginMvc.csproj">
-      <Project>{f7e3a616-71d8-4608-90ac-dc345a7fe7e5}</Project>
+    <ProjectReference Include="..\PluginMvc\PluginMvc.csproj">
+      <Project>{6410cfc8-ab21-4814-8805-56237d9bb5c3}</Project>
       <Name>PluginMvc</Name>
     </ProjectReference>
   </ItemGroup>
