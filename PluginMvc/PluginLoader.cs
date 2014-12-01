@@ -155,7 +155,9 @@ namespace PluginMvc
                         File.Copy(srcPath, toPath, true);
                         if (!IsAlreadyLoaded(plugindll))
                         {
-                            PerformFileDeploy(plugindll);
+                            var shadowCopiedAssembly = PerformFileDeploy(plugindll);
+                            if (shadowCopiedAssembly != null)
+                                plugin.DependentAssemblys.Add(shadowCopiedAssembly);
                             //var shadowCopiedAssembly = Assembly.Load(AssemblyName.GetAssemblyName(toPath));
                             //System.Web.Compilation.BuildManager.AddReferencedAssembly(shadowCopiedAssembly);
                         }

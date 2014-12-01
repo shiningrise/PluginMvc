@@ -33,6 +33,10 @@ namespace PluginMvc
 
         public PluginDescriptor()
         {
+            if (DependentAssemblys == null)
+            {
+                DependentAssemblys = new List<Assembly>();
+            }
             // TODO: Complete member initialization
             this._controllerTypes = new Dictionary<string, Type>();
         }
