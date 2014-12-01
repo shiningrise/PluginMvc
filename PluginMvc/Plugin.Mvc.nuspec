@@ -6,7 +6,7 @@
     <title>$title$</title>
     <authors>$author$</authors>
     <owners>$author$</owners>
-    <projectUrl>https://github.com/shiningrise/Plugin</projectUrl>
+    <projectUrl>https://github.com/shiningrise/PluginMvc</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>$description$</description>
     <releaseNotes>Plugin MVC WebApplication.</releaseNotes>
