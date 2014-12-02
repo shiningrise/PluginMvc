@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Web;
 using System.Xml;
 
@@ -86,7 +87,7 @@ namespace PluginMvc
             //程序集复制到临时目录。
             CopyToTempPluginFolderDirectory(plugins);
 
-            return plugins;
+            return plugins.FindAll(p => p.Plugin != null);
         }
 
         /// <summary>
@@ -104,87 +105,116 @@ namespace PluginMvc
             return filePath;
         }
 
+        private static readonly ReaderWriterLockSlim Locker = new ReaderWriterLockSlim();
+
         /// <summary>
         /// 程序集复制到临时目录。
         /// </summary>
         private static void CopyToTempPluginFolderDirectory(List<PluginDescriptor> pluginDescriptions)
         {
+
             Directory.CreateDirectory(PluginFolder.FullName);
             Directory.CreateDirectory(TempPluginFolder.FullName);
-
-            //清理临时文件。
-            Debug.WriteLine("清理临时文件");
-            var pluginsTemp = TempPluginFolder.GetFiles("*.*", SearchOption.AllDirectories).Where(p => FrameworkPrivateBinFiles.Contains(p.Name) == false);
-            foreach (var file in pluginsTemp)
+            using (new WriteLockDisposable(Locker))
             {
-                try
-                {
-                    Debug.WriteLine(file.FullName);
-                    file.Delete();
-                }
-                catch (Exception)
-                {
-
-                }
-            }
-
-            //复制插件进临时文件夹。
-            foreach (var plugin in pluginDescriptions)
-            {
-                var PluginFileNames = plugin.PluginFileName == null ? new string[] { } : plugin.PluginFileName.Split(',');
-                var dir = new DirectoryInfo(Path.Combine(PluginFolder.FullName, Path.Combine(plugin.Name, "bin")));
-                var list = dir.GetFiles("*.dll");
-                var plugindlls = new List<FileInfo>();
-                foreach (var item in list)
-                {
-                    if (FrameworkPrivateBinFiles.Contains(item.Name) == true)
-                        continue;
-                    if (item.Name.StartsWith("Plugin."))
-                        plugindlls.Add(item);
-                    else if (PluginFileNames.Length > 0 && PluginFileNames.Contains(item.Name) == true)
-                    {
-                        plugindlls.Add(item);
-                    }
-                }
-                foreach (var plugindll in plugindlls)
+                //清理临时文件。
+                Debug.WriteLine("清理临时文件");
+                var pluginsTemp = TempPluginFolder.GetFiles("*.*", SearchOption.AllDirectories).Where(p => FrameworkPrivateBinFiles.Contains(p.Name) == false);
+                foreach (var file in pluginsTemp)
                 {
                     try
                     {
-                        var srcPath = plugindll.FullName;
-                        var toPath = Path.Combine(TempPluginFolder.FullName, plugindll.Name);
-                        File.Copy(srcPath, toPath, true);
-                        if (!IsAlreadyLoaded(plugindll))
-                        {
-                            var shadowCopiedAssembly = PerformFileDeploy(plugindll);
-                            if (shadowCopiedAssembly != null)
-                                plugin.DependentAssemblys.Add(shadowCopiedAssembly);
-                            //var shadowCopiedAssembly = Assembly.Load(AssemblyName.GetAssemblyName(toPath));
-                            //System.Web.Compilation.BuildManager.AddReferencedAssembly(shadowCopiedAssembly);
-                        }
-#if DEBUG
-                        //if (srcPath.EndsWith(".dll"))
-                        //{
-                        //    var srcPdbPath = plugindll.FullName.Substring(0, plugindll.FullName.Length - 4) + ".pdb";
-                        //    var pdfName = plugindll.Name.Substring(0, plugindll.Name.Length - 4) + ".pdb";
-                        //    var toPdbPath = Path.Combine(TempPluginFolder.FullName, pdfName);
-
-                        //    if (File.Exists(srcPdbPath))
-                        //    {
-                        //        File.Copy(srcPdbPath, toPdbPath, true);
-                        //    }
-                        //}
-#endif
+                        //        Debug.WriteLine(file.FullName);
+                        file.Delete();
                     }
                     catch (Exception)
                     {
+                        Debug.WriteLine(file.FullName + "失败");
+                    }
+                }
 
+                //复制插件进临时文件夹。
+                foreach (var descriptor in pluginDescriptions)
+                {
+                    var PluginFileNames = descriptor.PluginFileName == null ? new string[] { } : descriptor.PluginFileName.Split(',');
+                    var dir = new DirectoryInfo(Path.Combine(PluginFolder.FullName, Path.Combine(descriptor.Name, "bin")));
+                    var list = dir.GetFiles("*.dll");
+                    var plugindlls = new List<FileInfo>();
+                    foreach (var item in list)
+                    {
+                        if (FrameworkPrivateBinFiles.Contains(item.Name) == true)
+                            continue;
+                        if (item.Name.StartsWith("Plugin."))
+                            plugindlls.Add(item);
+                        else if (PluginFileNames.Length > 0 && PluginFileNames.Contains(item.Name) == true)
+                        {
+                            plugindlls.Add(item);
+                        }
+                    }
+                    foreach (var plugindll in plugindlls)
+                    {
+                        try
+                        {
+                            var srcPath = plugindll.FullName;
+                            var toPath = Path.Combine(TempPluginFolder.FullName, plugindll.Name);
+                            //File.Copy(srcPath, toPath, true);
+                            //if (!IsAlreadyLoaded(plugindll))
+                            {
+                                var shadowCopiedAssembly = PerformFileDeploy(plugindll);
+                                if (shadowCopiedAssembly != null)
+                                {
+                                    descriptor.DependentAssemblys.Add(shadowCopiedAssembly);
+                                    var pluginTypes = shadowCopiedAssembly.GetTypes().Where(type => type.GetInterface(typeof(Plugin.IPlugin).Name) != null && type.IsClass && !type.IsAbstract);
+                                    if (pluginTypes.Count() > 1)
+                                    {
+                                        throw new Exception(shadowCopiedAssembly.FullName + "不只一个插件初始化类");
+                                    }
+                                    foreach (var pluginType in pluginTypes)
+                                    {
+                                        if (pluginType != null)
+                                        {
+                                            Plugin.IPlugin plugin = (Plugin.IPlugin)Activator.CreateInstance(pluginType);
+                                            //  plugin.Name = descriptor.Name;
+                                            descriptor.Plugin = plugin;
+                                            descriptor.Assembly = shadowCopiedAssembly;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    Debug.WriteLine("插件文件复制失败：" + srcPath + " -> " + toPath);
+                                    //    throw new Exception("插件文件复制失败：" + srcPath + " -> " + toPath);
+                                }
+
+
+                                //var shadowCopiedAssembly = Assembly.Load(AssemblyName.GetAssemblyName(toPath));
+                                //System.Web.Compilation.BuildManager.AddReferencedAssembly(shadowCopiedAssembly);
+                            }
+#if DEBUG
+                            //if (srcPath.EndsWith(".dll"))
+                            //{
+                            //    var srcPdbPath = plugindll.FullName.Substring(0, plugindll.FullName.Length - 4) + ".pdb";
+                            //    var pdfName = plugindll.Name.Substring(0, plugindll.Name.Length - 4) + ".pdb";
+                            //    var toPdbPath = Path.Combine(TempPluginFolder.FullName, pdfName);
+
+                            //    if (File.Exists(srcPdbPath))
+                            //    {
+                            //        File.Copy(srcPdbPath, toPdbPath, true);
+                            //    }
+                            //}
+#endif
+                        }
+                        catch (Exception)
+                        {
+
+                        }
                     }
                 }
             }
         }
 
-        #region Utility 
-        
+        #region Utility
+
         private static bool IsAlreadyLoaded(FileInfo fileInfo)
         {
             try
@@ -219,29 +249,29 @@ namespace PluginMvc
 
             FileInfo shadowCopiedPlug;
 
-            if (GetTrustLevel() != AspNetHostingPermissionLevel.Unrestricted)
-            {
-                //all plugins will need to be copied to ~/Plugins/bin/
-                //this is aboslutely required because all of this relies on probingPaths being set statically in the web.config
+            //if (GetTrustLevel() != AspNetHostingPermissionLevel.Unrestricted)
+            //{
+            //all plugins will need to be copied to ~/Plugins/bin/
+            //this is aboslutely required because all of this relies on probingPaths being set statically in the web.config
 
-                //were running in med trust, so copy to custom bin folder
-                var shadowCopyPlugFolder = Directory.CreateDirectory(TempPluginFolder.FullName);
-                shadowCopiedPlug = InitializeMediumTrust(plug, shadowCopyPlugFolder);
-            }
-            else
-            {
-                var directory = AppDomain.CurrentDomain.DynamicDirectory;
-                Debug.WriteLine(plug.FullName + " to " + directory);
-                //were running in full trust so copy to standard dynamic folder
-                shadowCopiedPlug = InitializeFullTrust(plug, new DirectoryInfo(directory));
-            }
+            //were running in med trust, so copy to custom bin folder
+            var shadowCopyPlugFolder = Directory.CreateDirectory(TempPluginFolder.FullName);
+            shadowCopiedPlug = InitializeMediumTrust(plug, shadowCopyPlugFolder);
+            //}
+            //else
+            //{
+            //    var directory = AppDomain.CurrentDomain.DynamicDirectory;
+            //    Debug.WriteLine(plug.FullName + " to " + directory);
+            //    //were running in full trust so copy to standard dynamic folder
+            //    shadowCopiedPlug = InitializeFullTrust(plug, new DirectoryInfo(directory));
+            //}
 
             //we can now register the plugin definition
             var shadowCopiedAssembly = Assembly.Load(AssemblyName.GetAssemblyName(shadowCopiedPlug.FullName));
 
             //add the reference to the build manager
-            Debug.WriteLine("Adding to BuildManager: '{0}'", shadowCopiedAssembly.FullName);
-            System.Web.Compilation.BuildManager.AddReferencedAssembly(shadowCopiedAssembly);
+            //Debug.WriteLine("Adding to BuildManager: '{0}'", shadowCopiedAssembly.FullName);
+            //System.Web.Compilation.BuildManager.AddReferencedAssembly(shadowCopiedAssembly);
 
             return shadowCopiedAssembly;
         }
@@ -333,10 +363,10 @@ namespace PluginMvc
             {
                 //it's better to use LastWriteTimeUTC, but not all file systems have this property
                 //maybe it is better to compare file hash?
-                var areFilesIdentical = shadowCopiedPlug.CreationTimeUtc.Ticks >= plug.CreationTimeUtc.Ticks;
+                var areFilesIdentical = shadowCopiedPlug.LastWriteTimeUtc.Ticks >= plug.LastWriteTimeUtc.Ticks;
                 if (areFilesIdentical)
                 {
-                    Debug.WriteLine("Not copying; files appear identical: '{0}'", shadowCopiedPlug.Name);
+                    Debug.WriteLine("Not copying; files appear identical:" + shadowCopiedPlug.Name);
                     shouldCopy = false;
                 }
                 else
@@ -344,11 +374,11 @@ namespace PluginMvc
                     //delete an existing file
 
                     //More info: http://www.nopcommerce.com/boards/t/11511/access-error-nopplugindiscountrulesbillingcountrydll.aspx?p=4#60838
-                    Debug.WriteLine("New plugin found; Deleting the old file: '{0}'", shadowCopiedPlug.Name);
+                    Debug.WriteLine("New plugin found; Deleting the old file: " + shadowCopiedPlug.Name);
                     File.Delete(shadowCopiedPlug.FullName);
                 }
             }
-
+            shouldCopy = true;
             if (shouldCopy)
             {
                 try

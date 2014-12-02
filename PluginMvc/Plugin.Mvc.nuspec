@@ -15,5 +15,6 @@
   </metadata>
   <files>
     <file src="content\web.config.transform" target="content\web.config.transform" />
+    <file src="Bootstrapper.cs" target="content\App_Start\Bootstrapper.cs" />
   </files>
 </package>

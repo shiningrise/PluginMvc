@@ -2,9 +2,27 @@
     ViewBag.Title = "Home Page";
 }
 
-
 @Html.ActionLink("admin1", "Index", "Home", new { area = "Admin" }, null)
 <p></p>
 @Html.ActionLink("Contents", "Index", "Home", new { area = "Contents" }, null)
-
+<p></p>
 @AppDomain.CurrentDomain.SetupInformation.PrivateBinPath
+
+@*@foreach (System.Reflection.Assembly item in ViewBag.ReferencedAssemblies)
+{
+    @item.FullName 
+    <br />
+    @item.Location
+    <br/>
+}*@
+<hr />
+
+@foreach (PluginMvc.PluginDescriptor item in ViewBag.Plugins)
+{
+    @item.Name
+    <br />
+    @item.PluginType
+    <br />
+    @(item.Plugin == null)
+    <hr />
+}

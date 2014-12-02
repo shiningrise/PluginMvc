@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -22,14 +23,61 @@ namespace PluginMvc
         /// </summary>
         public static void Initialize()
         {
-            _plugins.Clear();
             //遍历所有插件描述。
             var plugins = PluginLoader.Load();
-            
             foreach (var plugin in plugins)
             {
-                _plugins.Add(plugin.Name,plugin);
+                //卸载插件。
+                //Unload(plugin);
+                //初始化插件。
+                Initialize(plugin);
             }
+        }
+
+        /// <summary>
+        /// 初始化插件。
+        /// </summary>
+        /// <param name="pluginDescriptor">插件描述</param>
+        private static void Initialize(PluginDescriptor pluginDescriptor)
+        {
+            //使用插件名称做为字典 KEY。
+            string key = pluginDescriptor.Name;
+
+            //不存在时才进行初始化。
+            if (!_plugins.ContainsKey(key))
+            {
+                //初始化。
+                pluginDescriptor.Plugin.Initialize();
+
+                //增加到字典。
+                _plugins.Add(key, pluginDescriptor);
+                Debug.WriteLine("Load " + pluginDescriptor.Name);
+            }
+        }
+
+        /// <summary>
+        /// 卸载。
+        /// </summary>
+        public static void Unload()
+        {
+            //卸载所有插件。
+            foreach (var plugin in PluginLoader.Load())
+            {
+                plugin.Plugin.Unload();
+            }
+
+            //清空插件字典中的所有信息。
+            _plugins.Clear();
+        }
+
+        /// <summary>
+        /// 卸载。
+        /// </summary>
+        public static void Unload(PluginDescriptor pluginDescriptor)
+        {
+            Debug.WriteLine("Unload " + pluginDescriptor.Name);
+            pluginDescriptor.Plugin.Unload();
+            _plugins.Remove(pluginDescriptor.Name);
         }
 
         /// <summary>

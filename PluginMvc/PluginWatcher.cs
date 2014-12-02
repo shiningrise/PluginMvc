@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Diagnostics;
+using System.IO;
 
 namespace PluginMvc
 {
@@ -98,6 +99,7 @@ namespace PluginMvc
         {
             lock (_lockobject)
             {
+                Debug.WriteLine("ResetPlugin");
                 PluginManager.Initialize();
             }
         }

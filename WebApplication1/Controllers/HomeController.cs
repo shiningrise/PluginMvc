@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Web;
+using System.Web.Compilation;
 using System.Web.Mvc;
 
 namespace WebApplication1.Controllers
@@ -10,6 +12,8 @@ namespace WebApplication1.Controllers
     {
         public ActionResult Index()
         {
+            ViewBag.ReferencedAssemblies = BuildManager.GetReferencedAssemblies().OfType<Assembly>();
+            ViewBag.Plugins = PluginMvc.PluginManager.GetPlugins();
             return View();
         }
 

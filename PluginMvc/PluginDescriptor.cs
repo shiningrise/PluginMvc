@@ -11,6 +11,7 @@ namespace PluginMvc
     /// </summary>
     public class PluginDescriptor
     {
+        public Plugin.IPlugin Plugin { get; set; }
         /// <summary>
         /// 控制器类型字典。
         /// </summary>
@@ -41,20 +42,10 @@ namespace PluginMvc
             this._controllerTypes = new Dictionary<string, Type>();
         }
 
-        public void Init(IEnumerable<System.Reflection.Assembly> assemblies)
-        {
-            if (DependentAssemblys == null)
-            {
-                DependentAssemblys = new List<Assembly>();
-            }
-            DependentAssemblys.AddRange(assemblies);
-
-        }
-
         /// <summary>
         /// 程序集。
         /// </summary>
-        public Assembly Assembly { get; private set; }
+        public Assembly Assembly { get; set; }
 
         public List<Assembly> DependentAssemblys { get; private set; }
 

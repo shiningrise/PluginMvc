@@ -18,7 +18,7 @@
 
         public ActionResult Index()
         {
-            ContentItem contentItem = new ContentItem { Id = 1, Title = "Index" };
+            ContentItem contentItem = new ContentItem { Id = 1, Title = "Index 2" };
 
             return View(contentItem);
         }
