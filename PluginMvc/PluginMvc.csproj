@@ -67,7 +67,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Bootstrapper.cs" />
+    <None Include="Bootstrapper.cs" />
     <Compile Include="PluginDescriptor.cs" />
     <Compile Include="PluginFileParser.cs" />
     <Compile Include="PluginLoader.cs" />
